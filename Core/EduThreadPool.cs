@@ -8,7 +8,7 @@ internal class EduThreadPool(Thread[] workers)
     private readonly Thread[] _workers = workers;
     private readonly ConcurrentBag<IEduThreadPoolItem> _tasks = [];
 
-    private static readonly EduThreadPool _default = Create(1);
+    private static readonly EduThreadPool _default = Create(Environment.CurrentManagedThreadId);
     public static EduThreadPool Default => _default;
 
     public static EduThreadPool Create(int threadCount)
@@ -31,7 +31,7 @@ internal class EduThreadPool(Thread[] workers)
 
         _tasks.Add(threadItem);
 
-        Logger.Log($"Enqueued ID:{threadItem.Task.ID}");
+        Logger.LogDebug($"Enqueued ID:{threadItem.Task.ID}");
 
         return threadItem.Task;
     }
@@ -42,14 +42,14 @@ internal class EduThreadPool(Thread[] workers)
 
         _tasks.Add(threadItem);
 
-        Logger.Log($"Enqueued ID:{threadItem.Task.ID}");
+        Logger.LogDebug($"Enqueued ID:{threadItem.Task.ID}");
 
         return threadItem.Task;
     }
 
     private void StartWork()
     {
-        Logger.Log($"Started worker..");
+        Logger.LogDebug($"Started worker..");
 
         while(true)
         {
@@ -59,9 +59,9 @@ internal class EduThreadPool(Thread[] workers)
                 continue;
             }
 
-            Logger.Log($"Took task ID:{task.ID}");
+            Logger.LogDebug($"Took task ID:{task.ID}");
             task.Invoke();
-            Logger.Log($"Invoked action...");
+            Logger.LogDebug($"Invoked action...");
         }
     }
 }

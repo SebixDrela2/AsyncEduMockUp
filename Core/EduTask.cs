@@ -13,13 +13,13 @@ internal class EduTask<T>() : EduTaskBase, IEduTask<T>
 
     public EduTask<T> ContinueWith(Action<T> action)
     {
-        Logger.Log($"Asigned continuation... {ID}");
+        Logger.LogDebug($"Asigned continuation... {ID}");
 
         var task = new EduTask<T>();
 
         SetContinuation((result) =>
         {
-            Logger.Log($"Running continuation... {ID}");
+            Logger.LogDebug($"Running continuation... {ID}");
 
             action(result);
 
@@ -31,7 +31,7 @@ internal class EduTask<T>() : EduTaskBase, IEduTask<T>
 
     public void SetResult(T value)
     {
-        Logger.Log($"{value}");
+        Logger.LogDebug($"{value}");
 
         using var scope = _sync.EnterScope();
 
@@ -39,7 +39,7 @@ internal class EduTask<T>() : EduTaskBase, IEduTask<T>
 
         _result = value;
 
-        Logger.Log($"HasContinuation: {_continuation is { } } {ID}");
+        Logger.LogDebug($"HasContinuation: {_continuation is { } } {ID}");
 
         if (_continuation is { } continuation)
         {
@@ -74,7 +74,7 @@ internal class EduTask<T>() : EduTaskBase, IEduTask<T>
             throw new InvalidOperationException($"Continuation is already set.");
         }
 
-        Logger.Log($"SetContinuation {ID}");
+        Logger.LogDebug($"SetContinuation {ID}");
 
         _continuation = continuation;
 

@@ -8,7 +8,7 @@ internal class Program
     {
         var taskList = new List<EduTask<int>>();
 
-        for (var c = 'A'; c <= 'A'; ++c)
+        for (var c = 'A'; c <= 'Z'; ++c)
         {
             var chor = c;
             var task = EduTask.Run(() => Setup.GetHashCodeFromMemberCXor(chor));
@@ -18,7 +18,7 @@ internal class Program
 
         foreach(var task in taskList)
         {
-            task.ContinueWith((result) => Logger.Log($"Task completed: {result}"));
+            task.ContinueWith((result) => Logger.LogDebug($"Task completed: {result}"));
         }
 
         while(true)
@@ -31,7 +31,7 @@ internal class Program
 
             foreach(var task in completedTasks)
             {
-                Logger.Log($"{task.Result}");
+                Logger.LogDebug($"{task.Result}");
             }
         }
     }
