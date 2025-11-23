@@ -42,7 +42,7 @@ internal class EduThreadPool(Thread[] workers)
 
         _tasks.Add(threadItem);
 
-        Logger.Log($"Enqueued ID {threadItem.Task.ID}");
+        Logger.Log($"Enqueued ID:{threadItem.Task.ID}");
 
         return threadItem.Task;
     }
