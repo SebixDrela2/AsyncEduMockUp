@@ -5,11 +5,9 @@ using System.Threading.Tasks;
 
 internal class Program
 {
-    private static void Main(string[] args)
+    private static async Task Main(string[] args)
     {
-        RunCharHashCode().Wait();
-
-        EduThreadPool.Default.Dispose();
+        await RunCharHashCode();
     }
 
     private static async Task RunCharHashCode()
@@ -29,11 +27,7 @@ internal class Program
 
         await EduTask.WhenAll(continuations);
 
-        var completedTasks = taskList
-            .Where(x => x.IsCompleted)
-            .ToArray();
-
-        foreach (var task in completedTasks)
+        foreach (var task in taskList)
         {
             Logger.LogInfo($"{task.Result.C} {task.Result.HashCode}");
         }

@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 
 namespace AsyncEduMockUp.Core;
 
-internal class EduThreadPool(int capacity) : IDisposable
+internal class EduThreadPool(int capacity)
 {
     private int _taskCount = 0;
     private ConcurrentBag<Thread> _workers = [];
@@ -67,12 +67,6 @@ internal class EduThreadPool(int capacity) : IDisposable
         worker.Start();
 
         _workers.Add(worker);
-    }
-
-    public void Dispose()
-    {
-        _resetEvent.Wait();
-        _resetEvent.Dispose();
     }
 
     private void StartWork()
