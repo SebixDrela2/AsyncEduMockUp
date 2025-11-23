@@ -3,12 +3,15 @@ using System.Collections.Concurrent;
 
 namespace AsyncEduMockUp.Core;
 
-internal class EduThreadPool(Thread[] workers)
+internal class EduThreadPool(Thread[] workers) : IDisposable
 {
-    private readonly Thread[] _workers = workers;
+    private Thread[]? _workers = workers;
+    private CountdownEvent _countDownEvent = new(workers.Length);
+    private CancellationTokenSource _cts = new();
+
     private readonly ConcurrentBag<IEduThreadPoolItem> _tasks = [];
 
-    private static readonly EduThreadPool _default = Create(Environment.CurrentManagedThreadId);
+    private static readonly EduThreadPool _default = Create(Environment.ProcessorCount);
     public static EduThreadPool Default => _default;
 
     public static EduThreadPool Create(int threadCount)
@@ -20,6 +23,8 @@ internal class EduThreadPool(Thread[] workers)
         {
             worker = new Thread(instance.StartWork);
             worker.Start();
+
+            Logger.LogInfo($"Start worker...");
         }
 
         return instance;
@@ -47,21 +52,39 @@ internal class EduThreadPool(Thread[] workers)
         return threadItem.Task;
     }
 
+    public void Dispose()
+    {
+        _cts.Cancel();
+
+        _countDownEvent.Wait();
+
+        _cts.Dispose();
+        _countDownEvent.Dispose();
+    }
+
     private void StartWork()
     {
-        Logger.LogDebug($"Started worker..");
-
-        while(true)
+        try
         {
-            if (!_tasks.TryTake(out var task))
-            {
-                Thread.Sleep(1000);
-                continue;
-            }
+            Logger.LogDebug($"Started worker..");
+            var token = _cts.Token;
 
-            Logger.LogDebug($"Took task ID:{task.ID}");
-            task.Invoke();
-            Logger.LogDebug($"Invoked action...");
+            while (!token.IsCancellationRequested)
+            {
+                if (!_tasks.TryTake(out var task))
+                {
+                    Thread.Sleep(1000);
+                    continue;
+                }
+
+                Logger.LogDebug($"Took task ID:{task.ID}");
+                task.Invoke();
+                Logger.LogDebug($"Invoked action...");
+            }
+        }
+        finally
+        {
+            _countDownEvent.Signal();
         }
     }
 }

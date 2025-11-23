@@ -1,6 +1,9 @@
-﻿using System.Runtime.Loader;
+﻿using AsyncEduMockUp.Utils;
+using System.Runtime.Loader;
 
 namespace AsyncEduMockUp.Setup;
+
+public record struct CharHashCode(char C, int HashCode);
 
 internal static class Setup
 {
@@ -15,8 +18,9 @@ internal static class Setup
             .GroupBy(x => x[0])
             .ToDictionary(x => x.Key, x => x.ToArray());
 
-    public static int GetHashCodeFromMemberCXor(char c)
+    public static CharHashCode GetHashCodeFromMemberCXor(char c)
     {
+        Logger.LogInfo($"{c}");
         var randSleep = Random.Shared.Next(1000, 6000);
 
         if(!_memberItems.TryGetValue(c, out var items))
@@ -28,6 +32,6 @@ internal static class Setup
 
         Thread.Sleep(randSleep);
 
-        return hashCodeSum;
+        return new CharHashCode(c, hashCodeSum);
     }
 }
