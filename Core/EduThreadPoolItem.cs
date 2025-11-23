@@ -8,6 +8,20 @@ public interface IEduThreadPoolItem
     void Invoke();
 }
 
+internal class EduThreadPoolItem(Action action) : IEduThreadPoolItem
+{
+    public EduTask Task { get; } = new EduTask();
+
+    public int ID => Task.ID;
+
+    public void Invoke()
+    {
+        action();
+
+        Task.SetResult();
+    }
+}
+
 internal class EduThreadPoolItem<T>(Func<T> func) : IEduThreadPoolItem<T>
 {
     public EduTask<T> Task { get; } = new EduTask<T>();

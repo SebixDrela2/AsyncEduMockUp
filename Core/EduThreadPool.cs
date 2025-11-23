@@ -38,7 +38,13 @@ internal class EduThreadPool(Thread[] workers)
 
     public EduTask Enqueue(Action action)
     {
-        throw new NotImplementedException();
+        var threadItem = new EduThreadPoolItem(action);
+
+        _tasks.Add(threadItem);
+
+        Logger.Log($"Enqueued ID {threadItem.Task.ID}");
+
+        return threadItem.Task;
     }
 
     private void StartWork()
