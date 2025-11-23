@@ -3,38 +3,25 @@ using System.Collections.Concurrent;
 
 namespace AsyncEduMockUp.Core;
 
-internal class EduThreadPool(Thread[] workers) : IDisposable
+internal class EduThreadPool(int capacity) : IDisposable
 {
-    private Thread[]? _workers = workers;
-    private CountdownEvent _countDownEvent = new(workers.Length);
+    private int _taskCount = 0;
+    private ConcurrentBag<Thread> _workers = [];
     private CancellationTokenSource _cts = new();
 
+    private readonly ManualResetEventSlim _resetEvent = new(true);
     private readonly ConcurrentBag<IEduThreadPoolItem> _tasks = [];
 
     private static readonly EduThreadPool _default = Create(Environment.ProcessorCount);
     public static EduThreadPool Default => _default;
 
-    public static EduThreadPool Create(int threadCount)
-    {
-        var workers = new Thread[threadCount];
-        var instance = new EduThreadPool(workers);
-
-        foreach(ref var worker in workers.AsSpan())
-        {
-            worker = new Thread(instance.StartWork);
-            worker.Start();
-
-            Logger.LogInfo($"Start worker...");
-        }
-
-        return instance;
-    }
+    public static EduThreadPool Create(int threadCount) 
+        => new(threadCount);
 
     public EduTask<T> Enqueue<T>(Func<T> func)
     {
         var threadItem = new EduThreadPoolItem<T>(func);
-
-        _tasks.Add(threadItem);
+        AddTask(threadItem);
 
         Logger.LogDebug($"Enqueued ID:{threadItem.Task.ID}");
 
@@ -45,21 +32,52 @@ internal class EduThreadPool(Thread[] workers) : IDisposable
     {
         var threadItem = new EduThreadPoolItem(action);
 
-        _tasks.Add(threadItem);
+        AddTask(threadItem);
 
         Logger.LogDebug($"Enqueued ID:{threadItem.Task.ID}");
 
         return threadItem.Task;
     }
 
+    private void AddTask(IEduThreadPoolItem threadItem)
+    {
+        var newCount = Interlocked.Increment(ref _taskCount);
+
+        if (newCount is 1)
+        {
+            _resetEvent.Reset();
+        }
+
+        if (newCount < capacity)
+        {
+            StartWorker();
+
+            Logger.LogInfo($"Start worker...");
+        }
+        else
+        {
+            newCount = Interlocked.Decrement(ref _taskCount);
+        }
+
+        _tasks.Add(threadItem);
+    }
+
+    private void StartWorker()
+    {
+        var worker = new Thread(StartWork);
+        worker.Start();
+
+        _workers.Add(worker);
+    }
+
     public void Dispose()
     {
         _cts.Cancel();
 
-        _countDownEvent.Wait();
+        _resetEvent.Wait();
 
         _cts.Dispose();
-        _countDownEvent.Dispose();
+        _resetEvent.Dispose();
     }
 
     private void StartWork()
@@ -73,8 +91,7 @@ internal class EduThreadPool(Thread[] workers) : IDisposable
             {
                 if (!_tasks.TryTake(out var task))
                 {
-                    Thread.Sleep(1000);
-                    continue;
+                    break;
                 }
 
                 Logger.LogDebug($"Took task ID:{task.ID}");
@@ -84,7 +101,12 @@ internal class EduThreadPool(Thread[] workers) : IDisposable
         }
         finally
         {
-            _countDownEvent.Signal();
+            var newCount = Interlocked.Decrement(ref _taskCount);
+
+            if (newCount is 0)
+            {
+                _resetEvent.Set();
+            }
         }
     }
 }
