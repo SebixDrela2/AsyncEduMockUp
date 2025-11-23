@@ -7,7 +7,6 @@ internal class EduThreadPool(int capacity) : IDisposable
 {
     private int _taskCount = 0;
     private ConcurrentBag<Thread> _workers = [];
-    private CancellationTokenSource _cts = new();
 
     private readonly ManualResetEventSlim _resetEvent = new(true);
     private readonly ConcurrentBag<IEduThreadPoolItem> _tasks = [];
@@ -72,11 +71,7 @@ internal class EduThreadPool(int capacity) : IDisposable
 
     public void Dispose()
     {
-        _cts.Cancel();
-
         _resetEvent.Wait();
-
-        _cts.Dispose();
         _resetEvent.Dispose();
     }
 
@@ -85,9 +80,8 @@ internal class EduThreadPool(int capacity) : IDisposable
         try
         {
             Logger.LogDebug($"Started worker..");
-            var token = _cts.Token;
 
-            while (!token.IsCancellationRequested)
+            while (true)
             {
                 if (!_tasks.TryTake(out var task))
                 {
@@ -95,7 +89,9 @@ internal class EduThreadPool(int capacity) : IDisposable
                 }
 
                 Logger.LogDebug($"Took task ID:{task.ID}");
+
                 task.Invoke();
+
                 Logger.LogDebug($"Invoked action...");
             }
         }

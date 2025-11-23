@@ -17,6 +17,14 @@ internal abstract class EduTaskBase
         set => Volatile.Write(ref _isCompleted, value);
     }
 
+    public void Wait()
+    {
+        if (!IsCompleted)
+        {
+            throw new NotImplementedException("Result is not complete.");
+        }
+    }
+
     private protected void SetResult(Lock.Scope scope)
     {
         if (_isCompleted)
@@ -26,4 +34,6 @@ internal abstract class EduTaskBase
 
         _isCompleted = true;
     }
+
+    public abstract EduTask ContinueWith(Action continuation);
 }

@@ -1,10 +1,18 @@
 ﻿using AsyncEduMockUp.Core;
 using AsyncEduMockUp.Setup;
 using AsyncEduMockUp.Utils;
+using System.Threading.Tasks;
 
 internal class Program
 {
     private static void Main(string[] args)
+    {
+        RunCharHashCode().Wait();
+
+        EduThreadPool.Default.Dispose();
+    }
+
+    private static async Task RunCharHashCode()
     {
         var taskList = new List<EduTask<CharHashCode>>();
 
@@ -16,12 +24,10 @@ internal class Program
             taskList.Add(task);
         }
 
-        foreach(var task in taskList)
-        {
-            task.ContinueWith((result) => Logger.LogDebug($"Task completed: {result}"));
-        }
+        var continuations = taskList
+            .Select(task => task.ContinueWith((result) => Logger.LogDebug($"Task completed: {result}")));
 
-        Thread.Sleep(5000);
+        await EduTask.WhenAll(continuations);
 
         var completedTasks = taskList
             .Where(x => x.IsCompleted)
@@ -31,7 +37,5 @@ internal class Program
         {
             Logger.LogInfo($"{task.Result.C} {task.Result.HashCode}");
         }
-
-        EduThreadPool.Default.Dispose();
     }
 }
